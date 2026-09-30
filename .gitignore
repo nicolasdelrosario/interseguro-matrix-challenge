@@ -1,0 +1,5 @@
+statistics-service/node_modules/
+.env
+infra/.terraform/
+infra/*.tfstate*
+infra/*.tfvars

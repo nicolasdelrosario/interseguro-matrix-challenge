@@ -1,0 +1,2 @@
+subscription_id = "YOUR_AZURE_SUBSCRIPTION_ID"
+registry_name   = "YOUR_UNIQUE_REGISTRY_NAME"
