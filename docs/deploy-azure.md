@@ -97,6 +97,54 @@ az containerapp show \
 
 Prepend `https://` to that hostname. Use `/health` to check the API, `/docs` for its interactive reference, and send the README's example request to `/api/v1/matrices/rotate`. The first request after inactivity can take longer while the services start.
 
+## Verify a deployment
+
+Set the public Matrix API URL returned above:
+
+```sh
+MATRIX_URL="https://YOUR_MATRIX_FQDN"
+```
+
+Check the public health endpoint:
+
+```sh
+curl -fsS "$MATRIX_URL/health"
+```
+
+Verify rotation and the statistics returned through Go:
+
+```sh
+curl -fsS "$MATRIX_URL/api/v1/matrices/rotate" \
+  -H 'Content-Type: application/json' \
+  -d '{"matrix":[[1,2,3],[4,5,6]]}'
+```
+
+Verify QR factorization and the statistics returned through Go:
+
+```sh
+curl -fsS "$MATRIX_URL/api/v1/matrices/qr" \
+  -H 'Content-Type: application/json' \
+  -d '{"matrix":[[1,2],[3,4],[5,6]]}'
+```
+
+Statistics should remain internal to the Container Apps environment:
+
+```sh
+az containerapp show \
+  --name statistics \
+  --resource-group matrix-challenge \
+  --query 'properties.configuration.ingress.external' \
+  --output tsv
+```
+
+The command should return `false`. List both applications and their current hostnames with:
+
+```sh
+az containerapp list \
+  --resource-group matrix-challenge \
+  --output table
+```
+
 ## Finish the demo
 
 Delete the applications before removing their environment and registry with Terraform:

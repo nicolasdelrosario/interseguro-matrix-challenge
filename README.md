@@ -2,6 +2,16 @@
 
 This repository contains two backend services for Matrix Processing.
 
+## Live demo
+
+The Matrix API is currently deployed on Azure Container Apps:
+
+- [Health](https://matrix.orangetree-860309f6.eastus2.azurecontainerapps.io/health)
+- [Interactive API reference](https://matrix.orangetree-860309f6.eastus2.azurecontainerapps.io/docs)
+- [OpenAPI document](https://matrix.orangetree-860309f6.eastus2.azurecontainerapps.io/openapi.yaml)
+
+The deployed versions are `matrix-v1.0.0` and `statistics-v1.0.0`. The demo URL is valid while the Azure resources remain deployed.
+
 ## Request flow
 
 ### Rotation
