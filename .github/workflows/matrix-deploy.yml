@@ -1,0 +1,72 @@
+name: Deploy Matrix
+
+on:
+  push:
+    tags:
+      - matrix-v*
+
+permissions:
+  contents: read
+
+env:
+  RESOURCE_GROUP: matrix-challenge
+  CONTAINER_APPS_ENVIRONMENT: matrix-challenge-env
+  ACR_NAME: ${{ vars.ACR_NAME }}
+
+jobs:
+  ci:
+    uses: ./.github/workflows/matrix-ci.yml
+
+  deploy:
+    needs: ci
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Read the release version
+        id: release
+        run: |
+          if [[ ! "$GITHUB_REF_NAME" =~ ^matrix-v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$ ]]; then
+            echo '::error::Use a release tag like matrix-v1.0.0.'
+            exit 1
+          fi
+          release_version="${GITHUB_REF_NAME#matrix-v}"
+          echo "version=$release_version" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/checkout@v6
+
+      - name: Log in to Azure
+        uses: azure/login@v3
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Check the infrastructure
+        run: |
+          az containerapp env show --resource-group "$RESOURCE_GROUP" --name "$CONTAINER_APPS_ENVIRONMENT" --output none
+          az acr show --name "$ACR_NAME" --output none
+
+      - name: Check that the image version is new
+        env:
+          RELEASE_VERSION: ${{ steps.release.outputs.version }}
+        run: |
+          existing_repository=$(az acr repository list --name "$ACR_NAME" --query "[?@ == 'matrix']" --output tsv)
+          if [[ "$existing_repository" == matrix ]]; then
+            existing_version=$(az acr repository show-tags --name "$ACR_NAME" --repository matrix --query "[?@ == '$RELEASE_VERSION']" --output tsv)
+            if [[ "$existing_version" == "$RELEASE_VERSION" ]]; then
+              echo "::error::Image matrix:$RELEASE_VERSION already exists. Publish a new version."
+              exit 1
+            fi
+          fi
+
+      - name: Build and deploy Matrix API
+        uses: azure/container-apps-deploy-action@v1
+        with:
+          appSourcePath: ${{ github.workspace }}/matrix-service
+          acrName: ${{ env.ACR_NAME }}
+          acrUsername: ${{ secrets.ACR_USERNAME }}
+          acrPassword: ${{ secrets.ACR_PASSWORD }}
+          imageToBuild: ${{ env.ACR_NAME }}.azurecr.io/matrix:${{ steps.release.outputs.version }}
+          containerAppName: matrix
+          resourceGroup: ${{ env.RESOURCE_GROUP }}
+          containerAppEnvironment: ${{ env.CONTAINER_APPS_ENVIRONMENT }}
+          ingress: external
+          targetPort: '8080'
+          environmentVariables: STATISTICS_URL=http://statistics/api/v1/statistics

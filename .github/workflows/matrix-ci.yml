@@ -1,0 +1,34 @@
+name: Matrix CI
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - matrix-service/**
+      - .github/workflows/matrix-ci.yml
+      - .github/workflows/matrix-deploy.yml
+  pull_request:
+    branches: [main]
+    paths:
+      - matrix-service/**
+      - .github/workflows/matrix-ci.yml
+      - .github/workflows/matrix-deploy.yml
+  workflow_call:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-go@v6
+        with:
+          go-version-file: matrix-service/go.mod
+          cache-dependency-path: matrix-service/go.sum
+
+      - name: Test Matrix API
+        working-directory: matrix-service
+        run: go test ./...
