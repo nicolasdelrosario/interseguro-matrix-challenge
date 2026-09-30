@@ -1,0 +1,73 @@
+openapi: 3.1.0
+info:
+  title: Statistics API
+  version: 1.0.0
+  description: Internal API called by the Go Matrix API.
+servers:
+  - url: /api/v1
+security: []
+paths:
+  /statistics:
+    post:
+      operationId: calculateStatistics
+      summary: Calculate statistics over one or two matrices
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [matrices]
+              properties:
+                matrices:
+                  type: array
+                  minItems: 1
+                  maxItems: 2
+                  items:
+                    $ref: "#/components/schemas/Matrix"
+      responses:
+        "200":
+          description: Statistics over all matrix values
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Statistics"
+        "400":
+          description: Invalid matrix or numeric range
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "413":
+          description: Request body exceeds 1 MiB
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+components:
+  schemas:
+    Matrix:
+      type: array
+      minItems: 1
+      maxItems: 100
+      description: Nonempty rectangular matrix of finite numbers with at most 100 rows and columns.
+      items:
+        type: array
+        minItems: 1
+        maxItems: 100
+        items:
+          type: number
+    Statistics:
+      type: object
+      required: [min, max, sum, average, hasDiagonalMatrix]
+      properties:
+        min: { type: number }
+        max: { type: number }
+        sum: { type: number }
+        average: { type: number }
+        hasDiagonalMatrix: { type: boolean }
+    Error:
+      type: object
+      required: [error]
+      properties:
+        error: { type: string }
